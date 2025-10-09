@@ -96,7 +96,10 @@ export default class ConsentManager {
 
     changeAll(value){
         let changedServices = 0
-        this.config.services.filter(service => !service.contextualConsentOnly).map(service => {
+        const servicesToProcess = this.config.services.filter(service => !service.contextualConsentOnly)
+
+        // First pass: update all services
+        servicesToProcess.map(service => {
             if(service.required || this.config.required || value) {
                 if (this.updateConsent(service.name, true))
                     changedServices++
@@ -105,12 +108,52 @@ export default class ConsentManager {
                     changedServices++
             }
         })
+
+        // Second pass: ensure dependencies are enabled for enabled services
+        if (value) {
+            servicesToProcess.forEach(service => {
+                if (this.consents[service.name] && service.dependsOn) {
+                    const dependencies = Array.isArray(service.dependsOn) ? service.dependsOn : [service.dependsOn]
+                    dependencies.forEach(depName => {
+                        if (!this.consents[depName]) {
+                            this.consents[depName] = true
+                            changedServices++
+                        }
+                    })
+                }
+            })
+        }
+
         return changedServices
     }
 
     updateConsent(name, value){
         const changed = (this.consents[name] || false) !== value
         this.consents[name] = value
+
+        // Handle dependsOn: if enabling a service, also enable its dependencies
+        if (value) {
+            const service = this.getService(name)
+            if (service && service.dependsOn) {
+                const dependencies = Array.isArray(service.dependsOn) ? service.dependsOn : [service.dependsOn]
+                dependencies.forEach(depName => {
+                    if (!this.consents[depName]) {
+                        this.consents[depName] = true
+                    }
+                })
+            }
+        } else {
+            // If disabling a service, also disable all services that depend on it
+            this.config.services.forEach(service => {
+                if (service.dependsOn) {
+                    const dependencies = Array.isArray(service.dependsOn) ? service.dependsOn : [service.dependsOn]
+                    if (dependencies.includes(name) && this.consents[service.name]) {
+                        this.consents[service.name] = false
+                    }
+                }
+            })
+        }
+
         this.notify('consents', this.consents)
         return changed
     }
