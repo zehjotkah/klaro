@@ -309,6 +309,43 @@ export function setup(config){
     if (hashParams.has('klaro-ide')){
         showKlaroIDE(script)
     }
+
+    if (defaultConfig && defaultConfig.watch){
+        const observer = new MutationObserver((mutations) => {
+            let shouldUpdate = false
+            for(const mutation of mutations){
+                for(const node of mutation.addedNodes){
+                    if (node.nodeType !== 1) continue
+                    if (node.hasAttribute('data-name')){
+                        shouldUpdate = true
+                        break
+                    }
+                    if (node.querySelector('[data-name]')){
+                        shouldUpdate = true
+                        break
+                    }
+                }
+                if (shouldUpdate) break
+            }
+
+            if (shouldUpdate){
+                const manager = getManager(defaultConfig)
+                manager.applyConsents()
+            }
+
+            // we check if the Klaro element is still there
+            const element = document.getElementById(getElementID(defaultConfig))
+            if (element === null){
+                initialize({})
+            }
+        })
+        if (document.body)
+            observer.observe(document.body, {childList: true, subtree: true})
+        else
+            document.addEventListener("DOMContentLoaded", () => {
+                observer.observe(document.body, {childList: true, subtree: true})
+            })
+    }
 }
 
 export function show(config, modal, api){
