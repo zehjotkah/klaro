@@ -347,11 +347,31 @@ export default class ConsentManager {
                 parent.insertBefore(newElement, element)
                 parent.removeChild(element)
             } else if (element.tagName === 'SCRIPT' || element.tagName === 'LINK'){
-                // this element is already active, we do not touch it...
-                if (consent && element.type === (type || "") && element.src === src){
-                    // eslint-disable-next-line no-console
-                    console.debug(`Skipping ${element.tagName} for service ${service.name}, as it already has the correct type or src...`)
-                    continue
+                // this element is already in the correct state, we do not touch it...
+                // Use getAttribute to avoid browser normalization issues
+                const actualType = element.getAttribute('type')
+                const actualSrc = element.getAttribute('src')
+                const actualHref = element.getAttribute('href')
+
+                if (consent){
+                    // check if script is already active with correct type and src
+                    const expectedType = type || ""
+                    const hasCorrectType = actualType === expectedType
+                    const hasCorrectSrc = (src === undefined && !actualSrc) || actualSrc === src
+                    const hasCorrectHref = (href === undefined && !actualHref) || actualHref === href
+
+                    if (hasCorrectType && hasCorrectSrc && hasCorrectHref){
+                        // eslint-disable-next-line no-console
+                        console.debug(`Skipping ${element.tagName} for service ${service.name}, as it already has the correct type or src...`)
+                        continue
+                    }
+                } else {
+                    // check if script is already blocked
+                    if (actualType === 'text/plain'){
+                        // eslint-disable-next-line no-console
+                        console.debug(`Skipping ${element.tagName} for service ${service.name}, as it is already blocked...`)
+                        continue
+                    }
                 }
                 // we create a new script instead of updating the node in
                 // place, as the script won't start correctly otherwise
