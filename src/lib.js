@@ -316,6 +316,8 @@ export function setup(config){
             for(const mutation of mutations){
                 for(const node of mutation.addedNodes){
                     if (node.nodeType !== 1) continue
+                    // Ignore elements created by Klaro itself
+                    if (node.hasAttribute('data-klaro-internal')) continue
                     if (node.hasAttribute('data-name')){
                         shouldUpdate = true
                         break

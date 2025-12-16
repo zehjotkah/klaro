@@ -1,0 +1,17 @@
+<div data-name="googleMaps" id="map"></div>
+<script type="text/plain" data-type="application/javascript" data-name="googleMaps">
+console.log('[MAPS] Script executed, consent given');
+try {
+(function(){
+console.log('[MAPS] IIFE started');
+(g=>{var h,a,k,p="The Google Maps JavaScript API",c="google",l="importLibrary",q="__ib__",m=document,b=window;b=b[c]||(b[c]={});var d=b.maps||(b.maps={}),r=new Set,e=new URLSearchParams,u=()=>h||(h=new Promise(async(f,n)=>{await (a=m.createElement("script"));e.set("libraries",[...r]+"");for(k in g)e.set(k.replace(/[A-Z]/g,t=>"_"+t[0].toLowerCase()),g[k]);e.set("callback",c+".maps."+q);a.src=`https://maps.${c}apis.com/maps/api/js?`+e;d[q]=f;a.onerror=()=>h=n(Error(p+" could not load."));a.nonce=m.querySelector("script[nonce]")?.nonce||"";m.head.append(a)}));d[l]?console.warn(p+" only loads once. Ignoring:",g):d[l]=(f,...n)=>r.add(f)&&u().then(()=>d[l](f,...n))})({key:"AIzaSyDSNaUbcqIVN9W99E5Wlok_xDKwJtKvTxY",v:"weekly"});
+console.log('[MAPS] Loader setup complete');
+async function initMap(){console.log('[MAPS] initMap called');const e=document.getElementById("map");console.log('[MAPS] map element:',e,'display:',e?e.style.display:'N/A');if(!e||e.getAttribute('data-map-initialized')==='true')return;const t={lat:52.51986161289604,lng:13.386460092795966},{Map:a}=await google.maps.importLibrary("maps"),n=new a(e,{zoom:12,center:t,styles:[{featureType:"all",elementType:"labels.text.fill",stylers:[{color:"#6B6B6B"}]},{featureType:"all",elementType:"labels.text.stroke",stylers:[{color:"#FFFFFF"},{weight:2}]},{featureType:"administrative",elementType:"geometry.stroke",stylers:[{color:"#D0D0D0"}]},{featureType:"administrative.locality",elementType:"labels.text.fill",stylers:[{color:"#103274"}]},{featureType:"landscape",elementType:"geometry.fill",stylers:[{color:"#F0F2F5"}]},{featureType:"landscape.natural",elementType:"geometry.fill",stylers:[{color:"#EBF5DA"}]},{featureType:"poi",elementType:"geometry.fill",stylers:[{color:"#AAD922"}]},{featureType:"poi",elementType:"labels.text.fill",stylers:[{color:"#103274"}]},{featureType:"road",elementType:"geometry.fill",stylers:[{color:"#F8F8F8"}]},{featureType:"road",elementType:"labels.text.fill",stylers:[{color:"#6B6B6B"}]},{featureType:"road.highway",elementType:"geometry.fill",stylers:[{color:"#E0E0E0"}]},{featureType:"road.highway",elementType:"geometry.stroke",stylers:[{color:"#CCCCCC"}]},{featureType:"transit",elementType:"geometry.fill",stylers:[{color:"#F0F0F0"}]},{featureType:"transit.line",elementType:"geometry",stylers:[{color:"#B0B0B0"}]},{featureType:"water",elementType:"geometry.fill",stylers:[{color:"#103274"}]}],mapTypeControl:false,streetViewControl:false,fullscreenControl:false});new google.maps.Marker({position:t,map:n,title:"My Location"});e.setAttribute('data-map-initialized','true');console.log('[MAPS] Map initialized, element display:',e.style.display)}
+console.log('[MAPS] About to call initMap');
+initMap();
+console.log('[MAPS] initMap called (async, may not be complete yet)');
+})();
+} catch(err) {
+console.error('[MAPS] Error:', err);
+}
+</script>

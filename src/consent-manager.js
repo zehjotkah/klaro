@@ -27,6 +27,7 @@ export default class ConsentManager {
         this.states = {} // keep track of the change (enabled, disabled) of individual services
         this.initialized = {} // keep track of which services have been initialized already
         this.executedOnce = {} //keep track of which services have been executed at least once
+        this.temporaryConsents = {} // keep track of temporary/interactive consents (acceptOnce)
         this.watchers = new Set([])
         this.loadConsents()
         this.applyConsents()
@@ -162,6 +163,7 @@ export default class ConsentManager {
         this.consents = this.defaultConsents
         this.states = {}
         this.confirmed = false
+        this.temporaryConsents = {}
         this.applyConsents()
         this.savedConsents = {...this.consents}
         this.store.delete()
@@ -201,6 +203,7 @@ export default class ConsentManager {
         this.store.set(v);
         this.confirmed = true
         this.changed = false
+        this.temporaryConsents = {}
         const changes = this.changedConsents()
         this.savedConsents = {...this.consents}
         this.notify('saveConsents', {changes: changes, consents: this.consents, type: eventType || 'script'})
@@ -246,7 +249,7 @@ export default class ConsentManager {
             const optOut = (service.optOut !== undefined ? service.optOut : (this.config.optOut || false))
             const required = (service.required !== undefined ? service.required : (this.config.required || false))
             //opt out and required services are always treated as confirmed
-            const confirmed = this.confirmed || optOut || dryRun || interactive
+            const confirmed = this.confirmed || optOut || dryRun || interactive || this.temporaryConsents[service.name]
             const consent = (this.getConsent(service.name) && confirmed) || required
             const handlerOpts = {service: service, config: this.config, vars: vars, consents: this.consents, confirmed: this.confirmed}
 
@@ -380,6 +383,9 @@ export default class ConsentManager {
                     newElement.setAttribute(attribute.name, attribute.value)
                 }
 
+                // Mark this element as internal to prevent MutationObserver loops
+                newElement.setAttribute('data-klaro-internal', 'true')
+
                 if (element.hasAttribute('nonce')) {
                     newElement.setAttribute('nonce', element.nonce)
                 }
@@ -400,6 +406,18 @@ export default class ConsentManager {
                 parent.removeChild(element)
             } else {
                 // all other elements (images etc.) are modified in place...
+                // Check if element is already in the correct state (similar to script handling)
+                const currentDisplay = element.style.display
+                const isCurrentlyHidden = currentDisplay === 'none'
+                const shouldBeHidden = !consent
+
+                if (isCurrentlyHidden === shouldBeHidden && ds['modified-by-klaro'] === 'yes'){
+                    // Element is already in the correct state, skip modification
+                    // eslint-disable-next-line no-console
+                    console.debug(`Skipping ${element.tagName} for service ${service.name}, as it is already in the correct state...`)
+                    continue
+                }
+
                 if (consent){
                     for(const attr of attrs){
                         const attrValue = ds[attr]
@@ -411,7 +429,7 @@ export default class ConsentManager {
                     }
                     if (ds.title !== undefined)
                         element.title = ds.title
-                    if (ds['original-display'] !== undefined){
+                    if (ds['original-display'] !== undefined && ds['original-display'] !== ''){
                         element.style.display = ds['original-display']
                     } else {
                         element.style.removeProperty('display')
@@ -421,7 +439,7 @@ export default class ConsentManager {
                     if (ds.title !== undefined)
                         element.removeAttribute('title')
                     if (ds['original-display'] === undefined && element.style.display !== undefined)
-                        ds['original-display'] = element.style.display
+                        ds['original-display'] = element.style.display || ''
                     element.style.display = 'none'
                     for(const attr of attrs){
                         const attrValue = ds[attr]
